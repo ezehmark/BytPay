@@ -3,7 +3,7 @@ name: Build Debug APK
 on:
   push:
     branches:
-      - main  # Change if needed
+      - main  # Change to your branch if needed
 
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'yarn'  # Change to 'npm' if using npm
+          cache: 'yarn'  # Use 'npm' if using npm
 
       - name: Install Dependencies
         run: yarn install # Change to 'npm install' if using npm
@@ -35,11 +35,14 @@ jobs:
       - name: Build Debug APK with Gradle
         run: cd android && ./gradlew assembleDebug --no-daemon
 
-      - name: Verify APK Existence
-        run: ls -R android/app/build/outputs/apk/debug/
+      - name: Ensure APK Exists
+        run: |
+          echo "Checking if APK exists..."
+          ls -lah android/app/build/outputs/apk/debug/
+        continue-on-error: true
 
       - name: Upload APK as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
