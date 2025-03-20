@@ -94,6 +94,11 @@ android {
         versionCode 1
         versionName "1.0.0"
     }
+         aaptOptions {
+             ignoreAssetsPattern '*.png'
+         }
+         // Other configurations...
+     
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
