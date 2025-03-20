@@ -3,8 +3,7 @@ name: Build Debug APK
 on:
   push:
     branches:
-      - main  # Change this to your branch name if needed
-  pull_request:
+      - main  # Change if needed
 
 jobs:
   build:
@@ -19,10 +18,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'yarn'  # Use 'npm' if you're using npm
+          cache: 'yarn'  # Change to 'npm' if using npm
 
       - name: Install Dependencies
-        run: yarn install # Change to 'npm install' if you're using npm
+        run: yarn install # Change to 'npm install' if using npm
 
       - name: Install Expo CLI
         run: npm install -g expo-cli
@@ -34,7 +33,10 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Build Debug APK with Gradle
-        run: cd android && ./gradlew assembleDebug
+        run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK Existence
+        run: ls -R android/app/build/outputs/apk/debug/
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v3
