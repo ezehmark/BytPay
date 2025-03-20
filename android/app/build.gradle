@@ -94,10 +94,6 @@ android {
         versionCode 1
         versionName "1.0.0"
     }
-         aaptOptions {
-             ignoreAssetsPattern '*.png'
-         }
-         // Other configurations...
      
     signingConfigs {
         debug {
@@ -129,6 +125,9 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
+
+    aaptOptions {
+             ignoreAssetsPattern '*.png'                                                         }                                                                                       // Other configurations...
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
