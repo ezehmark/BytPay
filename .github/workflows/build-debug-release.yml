@@ -21,13 +21,19 @@ jobs:
           cache: 'yarn'  # Use 'npm' if using npm
 
       - name: Install Dependencies
-        run: yarn install # Change to 'npm install' if using npm
+        run: yarn install  # Change to 'npm install' if using npm
 
       - name: Install Expo CLI
         run: npm install -g expo-cli
 
       - name: Prebuild Expo App
         run: expo prebuild
+
+      - name: Remove old build cache
+        run: rm -rf ~/.gradle/caches
+
+      - name: Clean Gradle Build
+        run: cd android && ./gradlew clean
 
       - name: Grant Execution Permission to Gradle
         run: chmod +x android/gradlew
