@@ -1,21 +1,20 @@
-import MyApp from "./userDetails.tsx";
-import { useEffect } from "react";
-import { StatusBar } from "react-native";
-import * as NavigationBar from "expo-navigation-bar";
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 export default function App() {
-  useEffect(() => {
-    const handleNavigationBar = async () => {
-      await NavigationBar.setBackgroundColorAsync("#2e4a5f"); // Fixed function name
-      await NavigationBar.setButtonStyleAsync("light"); // Use "light" or "dark"
-    };
-    handleNavigationBar();
-  }, []);
-
   return (
-    <>
-      <StatusBar barStyle="dark-content" backgroundColor="#2e4a5f" />
-      <MyApp />
-    </>
+    <View style={styles.container}>
+      <WebView 
+        source={{ uri: 'https://bytpay.live' }} 
+        style={{ flex: 1 }} 
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
