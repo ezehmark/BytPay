@@ -1,70 +1,45 @@
 name: Build Debug APK
 
 on:
+  workflow_dispatch:  # Manual trigger
   push:
     branches:
-      - main  # Change to your branch if needed
+      - main
 
 jobs:
   build:
-    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout Repository with full clone
       - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Ensures a full clone
+        uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'yarn'  # Use 'npm' if using npm
+          cache: yarn
 
-      # Step 3: Install Dependencies
-      - name: Install Dependencies
-        run: yarn install  # Change to 'npm install' if using npm
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}
 
-      # Step 4: Install Expo CLI
-      - name: Install Expo CLI
-        run: npm install -g expo-cli
+      - name: Install dependencies
+        run: yarn install
 
-      # Step 5: Prebuild Expo App
-      - name: Prebuild Expo App
-        run: expo prebuild
+      - name: Prebuild Expo app
+        run: npx expo prebuild
 
-      # Step 6: Debug - List res folder contents
-      - name: List res folder contents
-        run: ls -R android/app/src/main/res
+      - name: Build Debug APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
 
-      # Step 7: Remove old build cache
-      - name: Remove old build cache
-        run: rm -rf ~/.gradle/caches
-
-      # Step 8: Clean Gradle Build
-      - name: Clean Gradle Build
-        run: cd android && ./gradlew clean
-
-      # Step 9: Grant Execution Permission to Gradle
-      - name: Grant Execution Permission to Gradle
-        run: chmod +x android/gradlew
-
-      # Step 10: Build Debug APK with Gradle
-      - name: Build Debug APK with Gradle
-        run: cd android && ./gradlew assembleDebug --no-daemon --stacktrace --info
-
-      # Step 11: Ensure APK Exists
-      - name: Ensure APK Exists
-        run: |
-          echo "Checking if APK exists..."
-          ls -lah android/app/build/outputs/apk/debug/
-        continue-on-error: true
-
-      # Step 12: Upload APK as Artifact
-      - name: Upload APK as Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
