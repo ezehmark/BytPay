@@ -1,4 +1,10 @@
 pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
     includeBuild(new File(
         ["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"]
             .execute(null, rootDir)
@@ -11,12 +17,16 @@ plugins {
 }
 
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
-    ex.autolinkLibrariesFromCommand() // Uses RN’s own autolinking, no Expo
+    ex.autolinkLibrariesFromCommand()
 }
 
-rootProject.name = 'Byta'
+rootProject.name = "Byta"
 
 dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
     versionCatalogs {
         reactAndroidLibs {
             from(files(new File(
@@ -29,7 +39,7 @@ dependencyResolutionManagement {
     }
 }
 
-include ':app'
+include(":app")
 
 includeBuild(new File(
     ["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"]

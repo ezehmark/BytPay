@@ -1,63 +1,19 @@
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.facebook.react")
-}
+// android/build.gradle
 
-react {
-    entryFile = file("../../index.js")
-    reactNativeDir = file("../../node_modules/react-native")
-    hermesCommand = file("../../node_modules/react-native/sdks/hermesc/%OS-BIN%/hermesc")
-    codegenDir = file("../../node_modules/@react-native/codegen")
-    autolinkLibrariesWithApp()
-}
-
-android {
-    namespace 'com.ezehmark.Byta'
-    compileSdk rootProject.ext.compileSdkVersion
-    ndkVersion rootProject.ext.ndkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-
-    defaultConfig {
-        applicationId 'com.ezehmark.Byta'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
-        resConfigs "en"
+buildscript {
+    repositories {
+        google()          // Needed for Android Gradle Plugin
+        mavenCentral()    // Needed for Kotlin and other dependencies
     }
-
-    splits {
-        abi {
-            enable true
-            reset()
-            include "arm64-v8a"
-            universalApk false
-        }
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            crunchPngs true
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-        }
-    }
-
-    packagingOptions {
-        exclude "**/libhermes-inspector.so"
-        exclude "**/librnskia.so"
-        exclude "**/libjsc.so"
-        // KEEP libc++_shared.so
-    }
-
-    androidResources {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.1.4")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
     }
 }
 
-dependencies {
-    implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:hermes-android")
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
