@@ -1,23 +1,26 @@
-plugin: "com.android.application"
-apply plugin: "org.jetbrains.kotlin.android"
-apply plugin: "com.facebook.react"
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "com.facebook.react"
+}
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 react {
     entryFile = file("../../index.js")
-    enableHermes: true
-    hermesCommandLineFlagsRelease: ["-O", "--strip-debug"]
+    enableHermes = true
+    hermesCommandLineFlagsRelease = ["-O", "--strip-debug"]
+
     reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"]
         .execute(null, rootDir).text.trim())
         .getParentFile()
         .getAbsoluteFile()
+
     hermesCommand = new File(["node", "--print", "require.resolve('react-native/package.json')"]
         .execute(null, rootDir).text.trim())
         .getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
 
-    codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/
-package.json')] })"]
+    codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"]
         .execute(null, rootDir).text.trim())
         .getParentFile()
         .getAbsoluteFile()
@@ -41,7 +44,7 @@ android {
         resConfigs "en"
     }
 
-    // This section is what ensures a single ABI.
+    // This section ensures a single ABI
     splits {
         abi {
             enable true
