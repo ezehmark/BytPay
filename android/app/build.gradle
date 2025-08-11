@@ -1,37 +1,22 @@
 plugins {
-    id "com.android.application"
-    id "org.jetbrains.kotlin.android"
-    id "com.facebook.react"
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.facebook.react")
 }
-
-def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 react {
     entryFile = file("../../index.js")
-
-    reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"]
-        .execute(null, rootDir).text.trim())
-        .getParentFile()
-        .getAbsoluteFile()
-
-    hermesCommand = new File(["node", "--print", "require.resolve('react-native/package.json')"]
-        .execute(null, rootDir).text.trim())
-        .getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
-
-    codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"]
-        .execute(null, rootDir).text.trim())
-        .getParentFile()
-        .getAbsoluteFile()
-
+    reactNativeDir = file("../../node_modules/react-native")
+    hermesCommand = file("../../node_modules/react-native/sdks/hermesc/%OS-BIN%/hermesc")
+    codegenDir = file("../../node_modules/@react-native/codegen")
     autolinkLibrariesWithApp()
 }
 
 android {
+    namespace 'com.ezehmark.Byta'
+    compileSdk rootProject.ext.compileSdkVersion
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
-
-    namespace 'com.ezehmark.Byta'
 
     defaultConfig {
         applicationId 'com.ezehmark.Byta'
@@ -64,7 +49,7 @@ android {
         exclude "**/libhermes-inspector.so"
         exclude "**/librnskia.so"
         exclude "**/libjsc.so"
-        exclude "**/libc++_shared.so"
+        // KEEP libc++_shared.so
     }
 
     androidResources {

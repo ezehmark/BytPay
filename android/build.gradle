@@ -1,54 +1,21 @@
+// android/build.gradle
+
 plugins {
-    id "com.android.application"
-    id "org.jetbrains.kotlin.android"
-    id "com.facebook.react"
+    id("com.android.application") version "8.1.4" apply false
+    id("com.facebook.react") apply false
+    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
 }
 
-android {
-    namespace "com.ezehmark.Byta"
-    compileSdk rootProject.ext.compileSdkVersion
-
-    defaultConfig {
-        applicationId "com.ezehmark.Byta"
-        minSdk rootProject.ext.minSdkVersion
-        targetSdk rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
-        resConfigs "en"
-    }
-
-    splits {
-        abi {
-            enable true
-            reset()
-            include "arm64-v8a" // Only arm64
-            universalApk false
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            // React Native (JSI / Hermes / Android artifacts)
+            url("$rootDir/../node_modules/react-native/android")
+        }
+        maven {
+            url("$rootDir/../node_modules/jsc-android/dist")
         }
     }
-
-    buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-        }
-    }
-
-    packagingOptions {
-        jniLibs {
-            excludes += [
-                "**/libjsc.so",
-                "**/libhermes-inspector.so"
-            ]
-        }
-        resources {
-            excludes += ["META-INF/*"]
-        }
-    }
-}
-
-dependencies {
-    implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:hermes-android")
-    implementation("com.github.react-native-webview:react-native-webview:13.15.0")
 }
