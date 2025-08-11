@@ -8,8 +8,6 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 react {
     entryFile = file("../../index.js")
-    enableHermes = true
-    hermesCommandLineFlagsRelease = ["-O", "--strip-debug"]
 
     reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"]
         .execute(null, rootDir).text.trim())
@@ -44,7 +42,6 @@ android {
         resConfigs "en"
     }
 
-    // This section ensures a single ABI
     splits {
         abi {
             enable true
@@ -64,10 +61,9 @@ android {
     }
 
     packagingOptions {
-        // Exclude unnecessary native libraries for release builds to save space
         exclude "**/libhermes-inspector.so"
         exclude "**/librnskia.so"
-        exclude "**/libjsc.so" // If not using JSC
+        exclude "**/libjsc.so"
         exclude "**/libc++_shared.so"
     }
 
@@ -77,8 +73,6 @@ android {
 }
 
 dependencies {
-    // Only the essential dependencies for React Native and WebView
     implementation("com.facebook.react:react-android")
     implementation("com.facebook.react:hermes-android")
-    // WebView dependency is managed by autolinking
 }
