@@ -5,6 +5,13 @@ plugins {
     id("com.facebook.react") apply false
     id("org.jetbrains.kotlin.android") version "1.9.23" apply false
 }
+ext {
+    compileSdkVersion = 34
+    targetSdkVersion = 34
+    minSdkVersion = 21
+    buildToolsVersion = "34.0.0"
+    ndkVersion = "26.1.10909125"
+}
 
 allprojects {
     repositories {
