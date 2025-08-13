@@ -31,15 +31,14 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.ezehmark.Byta'
-
     defaultConfig {
-        applicationId 'com.ezehmark.Byta'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
-        resConfigs "en"
-    }
+    applicationId 'com.ezehmark.Byta'
+    minSdkVersion 24
+    targetSdkVersion rootProject.ext.targetSdkVersion
+    versionCode 1
+    versionName "1.0.0"
+}
+
 
     splits {
         abi {
