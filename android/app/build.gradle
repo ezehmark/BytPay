@@ -6,7 +6,7 @@ plugins {
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
-entryFile = file("$rootDir/../index.js")
+entryFile = file("$rootDir/index.js")
     reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"]
         .execute(null, rootDir).text.trim())
         .getParentFile()
