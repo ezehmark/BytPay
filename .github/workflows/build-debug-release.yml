@@ -44,7 +44,7 @@ jobs:
             echo "const { getDefaultConfig } = require('metro-config'); module.exports = (async () => getDefaultConfig())();" > metro.config.js
           fi
 
-      # 6️⃣ Create JS bundle manually
+      # 6️⃣ Bundle JS for release
       - name: Bundle JS for release
         run: |
           mkdir -p android/app/src/main/assets
@@ -67,9 +67,13 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon --stacktrace
 
-      # 9️⃣ Upload APK
+      # 9️⃣ List APKs (debugging step)
+      - name: List APKs
+        run: ls -R android/app/build/outputs/apk/
+
+      # 🔟 Upload APK artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
+          path: android/app/build/outputs/apk/release/*.apk
