@@ -1,11 +1,6 @@
 /**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
+ * Metro configuration for React Native ≥0.73
  */
-const { getDefaultConfig } = require('metro-config');
+const { getDefaultConfig } = require('@react-native/metro-config');
 
-module.exports = (async () => {
-  const config = await getDefaultConfig();
-  return config;
-})();
-
+module.exports = getDefaultConfig(__dirname);
