@@ -10,18 +10,16 @@ import com.facebook.soloader.SoLoader
 
 class MainApplication : Application(), ReactApplication {
 
-    private val mReactNativeHost: ReactNativeHost = object : ReactNativeHost(this) {
+    // Correct override as a property
+    override val reactNativeHost: ReactNativeHost = object : ReactNativeHost(this) {
         override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
 
         override fun getPackages(): List<ReactPackage> {
-            // Autolinked packages
             return PackageList(this).packages
         }
 
         override fun getJSMainModuleName(): String = "index"
     }
-
-    override fun getReactNativeHost(): ReactNativeHost = mReactNativeHost
 
     override fun onCreate() {
         super.onCreate()
