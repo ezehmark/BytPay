@@ -28,5 +28,6 @@ android {
 
 dependencies {
     implementation "androidx.appcompat:appcompat:1.6.1"
+    inplementation "com.google.android.gms:play-services-auth:21.0.0"
     implementation "androidx.webkit:webkit:1.8.0"
 }
