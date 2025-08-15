@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile --force
 
-      # 5️⃣ Ensure Metro config exists (in case missing)
+      # 5️⃣ Ensure Metro config exists
       - name: Ensure metro.config.js
         run: |
           if [ ! -f metro.config.js ]; then
@@ -67,13 +67,32 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # 9️⃣ List APKs (debugging step)
+      # 9️⃣ List APKs
       - name: List APKs
         run: ls -R android/app/build/outputs/apk/
 
-      # 🔟 Upload APK artifact
+      # 🔟 Inspect APK Contents and save to TXT
+      - name: Inspect APK Contents
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/debug/ -name "*.apk" | head -n 1)
+          echo "APK Path: $APK_PATH"
+          OUTPUT_FILE=apk_contents.txt
+          echo "Listing all files inside APK (sorted by size):" > $OUTPUT_FILE
+          unzip -l "$APK_PATH" | awk '{print $4, $1}' | sort -k2 -nr >> $OUTPUT_FILE
+          echo -e "\nTotal APK size:" >> $OUTPUT_FILE
+          du -h "$APK_PATH" >> $OUTPUT_FILE
+          cat $OUTPUT_FILE
+
+      # 1️⃣1️⃣ Upload APK artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+
+      # 1️⃣2️⃣ Upload APK contents TXT
+      - name: Upload APK contents TXT
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-contents-analysis
+          path: apk_contents.txt
