@@ -15,7 +15,16 @@
             android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:scaleType="centerCrop"
-            android:src="@drawable/logo" />
+		android:src="@drawable/logo" />
+
+	
+        <ImageView
+            android:layout_width="match_parent"
+		android:layout_height="match_parent"                                  
+		android:scaleType="centerCrop"
+		android:src="@drawable/noWifi"
+		android:id="@+id/no_wifi_image"
+		android:visibility="gone"/>
 
     </LinearLayout>
 

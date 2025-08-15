@@ -2,6 +2,8 @@ package com.ezehmark.bytpay;
 
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,6 +16,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "WebViewConsole";
     private WebView webView;
     private View splashScreen;
+    private ImageView noWifiImage;
     private static final int SPLASH_DURATION = 5000; // 5 seconds
 
     @Override
@@ -31,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
         splashScreen = findViewById(R.id.splash_screen);
         webView = findViewById(R.id.webview);
+        noWifiImage = findViewById(R.id.no_wifi_image); // make sure this ID exists in layout
 
         // Apply system theme styles
         applySystemThemeUI();
@@ -72,35 +77,37 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Load website
-        webView.loadUrl("https://bytpay.live");
-
-        // Splash delay
+        // Splash delay and internet check
         new Handler().postDelayed(() -> {
-            splashScreen.setVisibility(View.GONE);
-            webView.setVisibility(View.VISIBLE);
+            if (isConnected()) {
+                splashScreen.setVisibility(View.GONE);
+                webView.setVisibility(View.VISIBLE);
+                webView.loadUrl("https://bytpay.live");
+            } else {
+                noWifiImage.setVisibility(View.VISIBLE);
+            }
         }, SPLASH_DURATION);
     }
 
-    /**
-     * Applies status/navigation bar colors and icon themes based on system dark mode.
-     */
+    private boolean isConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnected();
+    }
+
     private void applySystemThemeUI() {
         boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                 == Configuration.UI_MODE_NIGHT_YES;
 
         Window window = getWindow();
-
-        // Set colors
         int barColor = isDark ? Color.parseColor("#6B7280") : Color.parseColor("#E5E7EB");
         window.setStatusBarColor(barColor);
         window.setNavigationBarColor(barColor);
 
-        // Adjust icon colors (light icons for dark theme, dark icons for light theme)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             int appearance = isDark
-                    ? 0 // Light icons
-                    : WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS; // Dark icons
+                    ? 0
+                    : WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
             window.getInsetsController().setSystemBarsAppearance(
                     appearance,
                     WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
@@ -108,12 +115,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
             View decor = window.getDecorView();
             int flags = decor.getSystemUiVisibility();
-            if (!isDark) { // Light mode → dark icons
+            if (!isDark) {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
                 }
-            } else { // Dark mode → light icons
+            } else {
                 flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
@@ -123,9 +130,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Sends the current theme to WebView + calls window.themeChange().
-     */
     private void setThemeForWebView() {
         boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                 == Configuration.UI_MODE_NIGHT_YES;
