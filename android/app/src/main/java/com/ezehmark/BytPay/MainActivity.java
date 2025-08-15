@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         Window window = getWindow();
 
         // Set colors
-        int barColor = isDark ? Color.parseColor("#E5E7EB") : Color.parseColor("#FFFFFF");
+        int barColor = isDark ? Color.parseColor("#6B7280") : Color.parseColor("#E5E7EB");
         window.setStatusBarColor(barColor);
         window.setNavigationBarColor(barColor);
 
