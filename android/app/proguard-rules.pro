@@ -1,51 +1,14 @@
-# ============================
-# Keep only essential React Native classes
-# ============================
--keep class com.facebook.react.** { *; }
--keepclassmembers class * {
-    @com.facebook.react.uimanager.annotations.ReactProp <methods>;
-}
--keepclassmembers class * {
-    @com.facebook.react.bridge.ReactMethod <methods>;
-}
+# Add project specific ProGuard rules here.
+# By default, the flags in this file are appended to flags specified
+# in /usr/local/Cellar/android-sdk/24.3.3/tools/proguard/proguard-android.txt
+# You can edit the include path and order by changing the proguardFiles
+# directive in build.gradle.
+#
+# For more details, see
+#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Avoid stripping Hermes if accidentally enabled
--keep class com.facebook.hermes.** { *; }
--keep class com.facebook.jni.** { *; }
+# react-native-reanimated
+-keep class com.swmansion.reanimated.** { *; }
+-keep class com.facebook.react.turbomodule.** { *; }
 
-# ============================
-# WebView
-# ============================
--keep class com.reactnativecommunity.webview.** { *; }
-
-# ============================
-# Your App Classes
-# ============================
--keep class com.ezehmark.byta.MainApplication { *; }
--keep class com.ezehmark.byta.MainActivity { *; }
-
-# Keep only classes in your app package
--keep class com.ezehmark.byta.** { *; }
-
-# ============================
-# Remove unused AndroidX / support classes
-# ============================
--dontwarn androidx.**
--dontwarn android.support.**
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn com.squareup.**
--dontwarn com.google.**
-
-# ============================
-# Keep annotations
-# ============================
--keepattributes *Annotation*
--keepclassmembers class * {
-    @android.webkit.JavascriptInterface <methods>;
-}
-
-# ============================
-# Remove all unused methods and fields in other libraries
-# ============================
--dontshrink
+# Add any project specific keep options here:
