@@ -1,6 +1,7 @@
 package com.ezehmark.bytpay;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.webkit.ConsoleMessage;
@@ -15,11 +16,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "WebViewConsole";
     private WebView webView;
     private View splashScreen;
+    private static final int SPLASH_DURATION = 3000; // 3 seconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main); // now using layout
+        setContentView(R.layout.activity_main);
 
         splashScreen = findViewById(R.id.splash_screen);
         webView = findViewById(R.id.webview);
@@ -34,15 +36,7 @@ public class MainActivity extends AppCompatActivity {
                 "Chrome/120.0.0.0 Mobile Safari/537.36";
         webSettings.setUserAgentString(modernUA);
 
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                // Hide splash and show WebView when page is loaded
-                splashScreen.setVisibility(View.GONE);
-                webView.setVisibility(View.VISIBLE);
-            }
-        });
-
+        webView.setWebViewClient(new WebViewClient());
         WebView.setWebContentsDebuggingEnabled(true);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -57,7 +51,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Load the website
         webView.loadUrl("https://bytpay.live");
+
+        // Hide splash after 3 seconds, show WebView
+        new Handler().postDelayed(() -> {
+            splashScreen.setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
+        }, SPLASH_DURATION);
     }
 
     @Override
