@@ -21,12 +21,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-    </activity>
-    <activity
-    android:name=".MainActivity"
-    android:configChanges="uiMode|orientation|screenSize"
-    android:exported="true">
-</activity>
+        </activity>
     </application>
 
 </manifest>
