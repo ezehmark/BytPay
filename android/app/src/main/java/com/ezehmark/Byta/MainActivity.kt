@@ -1,4 +1,4 @@
-package com.bytance.BytPay
+package com.ezehmark.Byta
 
 import android.os.Build
 import android.os.Bundle

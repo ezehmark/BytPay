@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.bytance.BytPay'
+    namespace 'com.ezehmark.Byta'
     defaultConfig {
-        applicationId 'com.bytance.BytPay'
+        applicationId 'com.ezehmark.Byta'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

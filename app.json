@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "BytPay",
-    "slug": "BytPay",
+    "name": "Byta",
+    "slug": "Byta",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ezehmark.BytPay"
+      "bundleIdentifier": "com.ezehmark.Byta"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.bytance.BytPay"
+      "package": "com.ezehmark.Byta"
     },
     "web": {
       "favicon": "./assets/icon.png"
