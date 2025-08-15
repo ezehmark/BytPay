@@ -1,80 +1,32 @@
 plugins {
     id "com.android.application"
-    id "org.jetbrains.kotlin.android"
-    id "com.facebook.react"
-}
-
-react {
-    // Entry file
-    entryFile = file("$rootDir/../index.js")
-
-    reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"]
-        .execute(null, rootDir).text.trim())
-        .getParentFile()
-        .getAbsoluteFile()
-
-    hermesCommand = new File(["node", "--print", "require.resolve('react-native/package.json')"]
-        .execute(null, rootDir).text.trim())
-        .getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
-
-    codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"]
-        .execute(null, rootDir).text.trim())
-        .getParentFile()
-        .getAbsoluteFile()
-
-    autolinkLibrariesWithApp()
 }
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
-
-    namespace 'com.ezehmark.Byta'
+    namespace "com.ezehmark.bytpay"
+    compileSdk 34
 
     defaultConfig {
-        applicationId 'com.ezehmark.Byta'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        applicationId "com.ezehmark.bytpay"
+        minSdk 21
+        targetSdk 34
         versionCode 1
-        versionName "1.0.0"
-    }
-
-    // Build only armeabi-v7a to reduce size
-    splits {
-        abi {
-            enable true
-            reset()
-            include "armeabi-v7a"
-            universalApk false
-        }
+        versionName "1.0"
     }
 
     buildTypes {
         release {
-            // Minify disabled for now to avoid ProGuard stripping RN classes
             minifyEnabled false
             shrinkResources false
-            crunchPngs true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
-    }
-
-    packagingOptions {
-        // Keep C++ runtime to prevent Hermes crash
-        exclude "**/libhermes-inspector.so"
-        exclude "**/librnskia.so"
-        exclude "**/libjsc.so"
-        // DO NOT exclude libc++_shared.so
-    }
-
-    androidResources {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+        debug {
+            minifyEnabled false
+        }
     }
 }
 
 dependencies {
-    implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:hermes-android")
-    implementation project(':react-native-webview')
+    implementation "androidx.appcompat:appcompat:1.6.1"
+    implementation "androidx.webkit:webkit:1.8.0"
 }

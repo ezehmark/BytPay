@@ -1,28 +1,17 @@
-// android/build.gradle
-
-plugins {
-    id("com.android.application") version "8.1.4" apply false
-    id("com.facebook.react") apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
-}
-ext {
-    compileSdkVersion = 35
-    targetSdkVersion = 35
-    minSdkVersion = 24
-    buildToolsVersion = "35.0.0"
-    ndkVersion = "23.1.7779620"
+// Root-level build.gradle
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.1.4"
+    }
 }
 
 allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
-            // React Native (JSI / Hermes / Android artifacts)
-            url("$rootDir/../node_modules/react-native/android")
-        }
-        maven {
-            url("$rootDir/../node_modules/jsc-android/dist")
-        }
     }
 }
