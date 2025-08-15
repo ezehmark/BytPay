@@ -2,6 +2,7 @@ package com.ezehmark.bytpay;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -12,32 +13,36 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "WebViewConsole";
-    private WebView webView; // class-level variable
+    private WebView webView;
+    private View splashScreen;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main); // now using layout
 
-        // Create WebView programmatically
-        webView = new WebView(this);
+        splashScreen = findViewById(R.id.splash_screen);
+        webView = findViewById(R.id.webview);
 
-        // Enable JavaScript
+        // WebView settings
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
-
-        // Enable DOM storage
         webSettings.setDomStorageEnabled(true);
 
-        // Optional: Set modern User-Agent
         String modernUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
                 "Chrome/120.0.0.0 Mobile Safari/537.36";
         webSettings.setUserAgentString(modernUA);
 
-        // Keep navigation inside WebView
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                // Hide splash and show WebView when page is loaded
+                splashScreen.setVisibility(View.GONE);
+                webView.setVisibility(View.VISIBLE);
+            }
+        });
 
-        // Enable JS console logging safely
         WebView.setWebContentsDebuggingEnabled(true);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -52,11 +57,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Load your website
         webView.loadUrl("https://bytpay.live");
-
-        // Set WebView as content view
-        setContentView(webView);
     }
 
     @Override
