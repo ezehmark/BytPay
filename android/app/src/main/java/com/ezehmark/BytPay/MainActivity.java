@@ -12,22 +12,23 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "WebViewConsole";
+    private WebView webView; // class-level variable
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         // Create WebView programmatically
-        WebView webView = new WebView(this);
+        webView = new WebView(this);
 
         // Enable JavaScript
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
 
-        // Enable DOM storage for localStorage/sessionStorage
+        // Enable DOM storage
         webSettings.setDomStorageEnabled(true);
 
-        // Optional: Set modern User-Agent to avoid environment detection issues
+        // Optional: Set modern User-Agent
         String modernUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
                 "Chrome/120.0.0.0 Mobile Safari/537.36";
@@ -37,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient());
 
         // Enable JS console logging safely
-        WebView.setWebContentsDebuggingEnabled(true); // allows remote debugging
+        WebView.setWebContentsDebuggingEnabled(true);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
@@ -56,5 +57,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Set WebView as content view
         setContentView(webView);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
