@@ -2,8 +2,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Splash Screen -->
-    <LinearLayout
+    <!-- WebView at bottom -->
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- No Wi-Fi image overlay -->
+    <ImageView
+        android:id="@+id/no_wifi_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/no_wifi"
+        android:visibility="gone" />
+
+    <!-- Splash screen overlay on top -->
+    <FrameLayout
         android:id="@+id/splash_screen"
         android:orientation="vertical"
         android:gravity="center"
@@ -13,25 +29,9 @@
 
         <ImageView
             android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:scaleType="centerCrop"
-		android:src="@drawable/logo" />
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/logo" />
+    </FrameLayout>
 
-	
-        <ImageView
-            android:layout_width="match_parent"
-		android:layout_height="match_parent"                                  
-		android:scaleType="centerCrop"
-		android:src="@drawable/no_wifi"
-		android:id="@+id/no_wifi_image"
-		android:visibility="gone"/>
-
-    </LinearLayout>
-
-    <!-- WebView -->
-    <WebView
-        android:id="@+id/webview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
 </FrameLayout>

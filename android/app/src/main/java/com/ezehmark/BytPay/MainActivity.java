@@ -105,8 +105,10 @@ public class MainActivity extends AppCompatActivity {
 
             if (isConnected()) {
                 webView.setVisibility(View.VISIBLE);
+
                 webView.loadUrl("https://bytpay.live");
             } else {
+		    webView.setVisibility(View.GONE);
                 noWifiImage.setVisibility(View.VISIBLE);
             }
         }, SPLASH_DURATION);
