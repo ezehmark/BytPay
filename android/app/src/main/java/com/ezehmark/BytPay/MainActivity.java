@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
     // Google Sign-In
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 100;
+
+    // Network monitoring
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,10 +109,9 @@ public class MainActivity extends AppCompatActivity {
 
             if (isConnected()) {
                 webView.setVisibility(View.VISIBLE);
-
                 webView.loadUrl("https://bytpay.live");
             } else {
-		    webView.setVisibility(View.GONE);
+                webView.setVisibility(View.GONE);
                 noWifiImage.setVisibility(View.VISIBLE);
             }
         }, SPLASH_DURATION);
@@ -119,6 +122,45 @@ public class MainActivity extends AppCompatActivity {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isConnected();
+    }
+
+    /** START NETWORK LISTENER **/
+    @Override
+    protected void onStart() {
+        super.onStart();
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                runOnUiThread(() -> {
+                    noWifiImage.setVisibility(View.GONE);
+                    webView.setVisibility(View.VISIBLE);
+                    if (webView.getUrl() == null) {
+                        webView.loadUrl("https://bytpay.live");
+                    }
+                });
+            }
+
+            @Override
+            public void onLost(Network network) {
+                runOnUiThread(() -> {
+                    webView.setVisibility(View.GONE);
+                    noWifiImage.setVisibility(View.VISIBLE);
+                });
+            }
+        };
+
+        cm.registerDefaultNetworkCallback(networkCallback);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (networkCallback != null) {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            cm.unregisterNetworkCallback(networkCallback);
+        }
     }
 
     /** THEME SETUP **/
@@ -164,12 +206,12 @@ public class MainActivity extends AppCompatActivity {
 
         String js =
                 "document.documentElement.setAttribute('data-theme', '" + theme + "');" +
-                "if (window.themeChange) { window.themeChange('" + theme + "'); }" +
-                "try {" +
-                "  const mql = window.matchMedia('(prefers-color-scheme: dark)');" +
-                "  Object.defineProperty(mql, 'matches', { value: " + (isDark ? "true" : "false") + ", configurable: true });" +
-                "  window.dispatchEvent(new Event('change'));" +
-                "} catch(e) { console.log('Theme event injection failed', e); }";
+                        "if (window.themeChange) { window.themeChange('" + theme + "'); }" +
+                        "try {" +
+                        "  const mql = window.matchMedia('(prefers-color-scheme: dark)');" +
+                        "  Object.defineProperty(mql, 'matches', { value: " + (isDark ? "true" : "false") + ", configurable: true });" +
+                        "  window.dispatchEvent(new Event('change'));" +
+                        "} catch(e) { console.log('Theme event injection failed', e); }";
 
         webView.evaluateJavascript(js, null);
     }
@@ -227,4 +269,3 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-
