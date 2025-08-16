@@ -16,7 +16,6 @@ android {
 
     signingConfigs {
         release {
-            // Read values from gradle.properties
             if (project.hasProperty("MYAPP_UPLOAD_STORE_FILE")) {
                 storeFile file(MYAPP_UPLOAD_STORE_FILE)
                 storePassword MYAPP_UPLOAD_STORE_PASSWORD
@@ -41,6 +40,9 @@ android {
 
 dependencies {
     implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "com.google.android.gms:play-services-auth:21.0.0"
     implementation "androidx.webkit:webkit:1.8.0"
+
+    // ✅ Google Identity Services (One Tap)
+    implementation "com.google.android.gms:play-services-auth:21.2.0"
+    implementation "com.google.android.gms:play-services-identity:18.0.1"
 }
