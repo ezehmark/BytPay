@@ -247,9 +247,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendTokenToWebView(String token) {
-        String js = "window.postMessage({ type: 'GOOGLE_SIGN_IN', token: '" + token + "' }, '*');";
-        webView.evaluateJavascript(js, null);
-    }
+    String js = "if (window.onGoogleSignIn) { window.onGoogleSignIn('" + token + "'); }";
+    webView.evaluateJavascript(js, null);
+}
+
 
     /** THEME CHANGE HANDLER **/
     @Override
