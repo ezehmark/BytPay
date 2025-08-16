@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "552162671981-i3lc4odut11fapqmqra9ni0q6egjkne7.apps.googleusercontent.com",
+          "client_id": "552162671981-ou1hrnn0gip6ok4onhcp1doil29nulie.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.ezehmark.bytpay",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "certificate_hash": "6822685e2c95315e4f69ff9fd51662af9ca69bf1"
           }
         },
         {
