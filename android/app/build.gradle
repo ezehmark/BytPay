@@ -39,10 +39,11 @@ android {
 }
 
 dependencies {
+    // AndroidX
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "androidx.webkit:webkit:1.8.0"
 
-    // ✅ Google Identity Services (One Tap)
+    // Google Identity Services (One Tap) - modern curved bottom popup
     implementation "com.google.android.gms:play-services-auth:21.2.0"
-    implementation "com.google.android.gms:play-services-identity:18.0.1"
+    implementation "com.google.android.gms:play-services-identity:18.2.0"
 }
