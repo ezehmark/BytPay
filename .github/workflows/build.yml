@@ -19,35 +19,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Decode Debug Keystore
+      # Decode your release keystore from GitHub secret
+      - name: Decode Release Keystore
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/my-debug-key.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build Signed Debug APK
+      # Build signed Release APK & AAB
+      - name: Build Signed Release APK & AAB
         run: |
           cd android
-          ./gradlew assembleDebug \
-            -PMYAPP_UPLOAD_STORE_FILE=my-debug-key.jks \
-            -PMYAPP_UPLOAD_KEY_ALIAS=$KEY_ALIAS \
-            -PMYAPP_UPLOAD_STORE_PASSWORD=$KEYSTORE_PASSWORD \
-            -PMYAPP_UPLOAD_KEY_PASSWORD=$KEY_PASSWORD
+          ./gradlew assembleRelease bundleRelease \
+            -PMYAPP_UPLOAD_STORE_FILE=my-release-key.jks \
+            -PMYAPP_UPLOAD_KEY_ALIAS=${{ secrets.KEY_ALIAS }} \
+            -PMYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} \
+            -PMYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
 
-      - name: Build Signed Debug AAB
-        run: |
-          cd android
-          ./gradlew bundleDebug \
-            -PMYAPP_UPLOAD_STORE_FILE=my-debug-key.jks \
-            -PMYAPP_UPLOAD_KEY_ALIAS=$KEY_ALIAS \
-            -PMYAPP_UPLOAD_STORE_PASSWORD=$KEYSTORE_PASSWORD \
-            -PMYAPP_UPLOAD_KEY_PASSWORD=$KEY_PASSWORD
-
+      # Show APK size for verification
       - name: Show APK size
         run: |
           OUTPUT_FILE=apk-size.txt
-          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
           if [ -f "$APK_PATH" ]; then
             echo "APK size details" > $OUTPUT_FILE
             ls -lh "$APK_PATH" >> $OUTPUT_FILE
@@ -59,11 +53,12 @@ jobs:
             cat $OUTPUT_FILE
           fi
 
+      # Upload both artifacts
       - name: Upload APK and AAB artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: debug-builds
+          name: release-builds
           path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/bundle/debug/*.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
             apk-size.txt
