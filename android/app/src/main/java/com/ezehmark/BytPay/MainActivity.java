@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,7 +32,6 @@ import com.google.android.gms.auth.api.identity.SignInCredential;
 import com.google.android.gms.common.api.ApiException;
 
 public class MainActivity extends AppCompatActivity {
-
     private static final String TAG = "WebViewConsole";
     private WebView webView;
     private View splashScreen;
@@ -54,6 +54,9 @@ public class MainActivity extends AppCompatActivity {
         splashScreen = findViewById(R.id.splash_screen);
         webView = findViewById(R.id.webview);
         noWifiImage = findViewById(R.id.no_wifi_image);
+
+        // start hidden
+        noWifiImage.setVisibility(View.GONE);
 
         applySystemThemeUI();
         setupGoogleOneTap();
@@ -102,26 +105,40 @@ public class MainActivity extends AppCompatActivity {
 
         // Splash delay & internet check
         new Handler().postDelayed(() -> {
+            if (isConnected()) {
+                webView.setVisibility(View.VISIBLE);
+                webView.loadUrl("https://bytpay.live");
+            } else {
+                // overlay no wifi
+                noWifiImage.setVisibility(View.VISIBLE);
+                webView.setVisibility(View.VISIBLE); // keep webview ready underneath
+            }
+
             splashScreen.animate()
                     .alpha(0f)
                     .setDuration(500)
                     .withEndAction(() -> splashScreen.setVisibility(View.GONE));
 
-            if (isConnected()) {
-                webView.setVisibility(View.VISIBLE);
-                webView.loadUrl("https://bytpay.live");
-            } else {
-                webView.setVisibility(View.GONE);
-                noWifiImage.setVisibility(View.VISIBLE);
-            }
         }, SPLASH_DURATION);
     }
 
     /** INTERNET CHECK **/
     private boolean isConnected() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        return netInfo != null && netInfo.isConnected();
+        if (cm == null) return false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network network = cm.getActiveNetwork();
+            if (network == null) return false;
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+            return capabilities != null &&
+                    (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        } else {
+            NetworkInfo netInfo = cm.getActiveNetworkInfo();
+            return netInfo != null && netInfo.isConnected();
+        }
     }
 
     /** START NETWORK LISTENER **/
@@ -135,7 +152,6 @@ public class MainActivity extends AppCompatActivity {
             public void onAvailable(Network network) {
                 runOnUiThread(() -> {
                     noWifiImage.setVisibility(View.GONE);
-                    webView.setVisibility(View.VISIBLE);
                     if (webView.getUrl() == null) {
                         webView.loadUrl("https://bytpay.live");
                     }
@@ -145,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onLost(Network network) {
                 runOnUiThread(() -> {
-                    webView.setVisibility(View.GONE);
+                    // Show overlay while keeping webview behind
                     noWifiImage.setVisibility(View.VISIBLE);
                 });
             }
