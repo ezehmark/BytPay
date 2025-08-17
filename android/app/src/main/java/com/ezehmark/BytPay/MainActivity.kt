@@ -8,6 +8,7 @@ import android.net.Network
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.view.Window
@@ -19,26 +20,28 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ImageView
+import androidx.annotation.Nullable
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.gms.auth.api.identity.BeginSignInRequest
-import com.google.android.gms.auth.api.identity.Identity
-import com.google.android.gms.auth.api.identity.SignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
 
 class MainActivity : AppCompatActivity() {
 
-    private val TAG = "WebViewConsole"
+    companion object {
+        private const val TAG = "WebViewConsole"
+        private const val SPLASH_DURATION = 5000 // 5 seconds
+        private const val RC_SIGN_IN = 100
+    }
+
     private lateinit var webView: WebView
     private lateinit var splashScreen: View
     private lateinit var noWifiImage: ImageView
+    private lateinit var mGoogleSignInClient: GoogleSignInClient
 
-    private val SPLASH_DURATION = 5000
-
-    // Google Identity Services
-    private lateinit var oneTapClient: SignInClient
-    private lateinit var signInRequest: BeginSignInRequest
-
-    // Network monitoring
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,30 +53,31 @@ class MainActivity : AppCompatActivity() {
         noWifiImage = findViewById(R.id.no_wifi_image)
 
         applySystemThemeUI()
-        setupGoogleIdentity()
+        setupGoogleSignIn()
 
         // WebView setup
-        val webSettings = webView.settings
-        webSettings.javaScriptEnabled = true
-        webSettings.domStorageEnabled = true
-        val modernUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/120.0.0.0 Mobile Safari/537.36"
-        webSettings.userAgentString = modernUA
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            userAgentString = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                    "Chrome/120.0.0.0 Mobile Safari/537.36"
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            webSettings.forceDark = WebSettings.FORCE_DARK_AUTO
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                forceDark = WebSettings.FORCE_DARK_AUTO
+            }
         }
 
         WebView.setWebContentsDebuggingEnabled(true)
+
         webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
+            override fun onPageFinished(view: WebView?, url: String?) {
                 setThemeForWebView()
             }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                 consoleMessage?.let {
                     val msg = it.message()
                     val line = it.lineNumber()
@@ -84,7 +88,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // JS interface for sign-in
+        // Add JS interface for triggering native sign-in
         webView.addJavascriptInterface(object {
             @JavascriptInterface
             fun triggerGoogleSignIn() {
@@ -93,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         }, "AndroidApp")
 
         // Splash delay & internet check
-        Handler().postDelayed({
+        Handler(Looper.getMainLooper()).postDelayed({
             splashScreen.animate()
                 .alpha(0f)
                 .setDuration(500)
@@ -109,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         }, SPLASH_DURATION.toLong())
     }
 
-    /** NETWORK LISTENER **/
+    /** START NETWORK LISTENER **/
     override fun onStart() {
         super.onStart()
         val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -132,7 +136,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
         cm.registerDefaultNetworkCallback(networkCallback!!)
     }
 
@@ -187,55 +190,37 @@ class MainActivity : AppCompatActivity() {
             if (window.themeChange) { window.themeChange('$theme'); }
             try {
               const mql = window.matchMedia('(prefers-color-scheme: dark)');
-              Object.defineProperty(mql, 'matches', { value: ${if (isDark) "true" else "false"}, configurable: true });
+              Object.defineProperty(mql, 'matches', { value: ${isDark}, configurable: true });
               window.dispatchEvent(new Event('change'));
             } catch(e) { console.log('Theme event injection failed', e); }
-        """
+        """.trimIndent()
+
         webView.evaluateJavascript(js, null)
     }
 
-    /** GOOGLE IDENTITY SERVICES **/
-    private fun setupGoogleIdentity() {
-        oneTapClient = Identity.getSignInClient(this)
-        signInRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    .setServerClientId(getString(R.string.default_web_client_id))
-                    .setFilterByAuthorizedAccounts(false)
-                    .build()
-            )
-            .setAutoSelectEnabled(true)
+    /** GOOGLE SIGN-IN **/
+    private fun setupGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id)) // from Firebase console
+            .requestEmail()
             .build()
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
     }
 
     private fun startGoogleSignIn() {
-        oneTapClient.beginSignIn(signInRequest)
-            .addOnSuccessListener { result ->
-                try {
-                    startIntentSenderForResult(
-                        result.pendingIntent.intentSender,
-                        200, null, 0, 0, 0, null
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            .addOnFailureListener {
-                Log.e(TAG, "Sign-in failed: ${it.localizedMessage}")
-            }
+        val signInIntent = mGoogleSignInClient.signInIntent
+        startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, @Nullable data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == 200) {
+        if (requestCode == RC_SIGN_IN) {
+            val task: Task<GoogleSignInAccount> = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
-                val credential = oneTapClient.getSignInCredentialFromIntent(data)
-                val idToken = credential.googleIdToken
-                if (idToken != null) {
-                    sendTokenToWebView(idToken)
-                }
+                val account: GoogleSignInAccount? = task.getResult(ApiException::class.java)
+                val idToken = account?.idToken
+                if (idToken != null) sendTokenToWebView(idToken)
             } catch (e: ApiException) {
                 e.printStackTrace()
             }
@@ -263,9 +248,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** INTERNET CHECK **/
     private fun isConnected(): Boolean {
         val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = cm.activeNetworkInfo
-        return network != null && network.isConnected
+        val network = cm.activeNetwork
+        return network != null
     }
 }
