@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
                                 .setFilterByAuthorizedAccounts(false)
                                 .build()
                 )
-                .setAutoSelectEnabled(true)
+                .setAutoSelectEnabled(false)
                 .build();
     }
 
