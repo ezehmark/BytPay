@@ -24,12 +24,11 @@ import android.widget.ImageView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.identity.BeginSignInRequest;
+import com.google.android.gms.auth.api.identity.Identity;
+import com.google.android.gms.auth.api.identity.SignInClient;
+import com.google.android.gms.auth.api.identity.SignInCredential;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -39,9 +38,10 @@ public class MainActivity extends AppCompatActivity {
     private ImageView noWifiImage;
     private static final int SPLASH_DURATION = 5000; // 5 seconds
 
-    // Google Sign-In
-    private GoogleSignInClient mGoogleSignInClient;
-    private static final int RC_SIGN_IN = 100;
+    // GIS One Tap
+    private SignInClient oneTapClient;
+    private BeginSignInRequest signInRequest;
+    private static final int REQ_ONE_TAP = 100;
 
     // Network monitoring
     private ConnectivityManager.NetworkCallback networkCallback;
@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         noWifiImage = findViewById(R.id.no_wifi_image);
 
         applySystemThemeUI();
-        setupGoogleSignIn();
+        setupGoogleOneTap();
 
         // WebView setup
         WebSettings webSettings = webView.getSettings();
@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface
             public void triggerGoogleSignIn() {
-                runOnUiThread(() -> startGoogleSignIn());
+                runOnUiThread(() -> startGoogleOneTap());
             }
         }, "AndroidApp");
 
@@ -172,7 +172,6 @@ public class MainActivity extends AppCompatActivity {
         int barColor = isDark ? Color.parseColor("#6B7280") : Color.parseColor("#E5E7EB");
         window.setStatusBarColor(barColor);
         window.setNavigationBarColor(barColor);
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             int appearance = isDark
                     ? 0
@@ -216,30 +215,50 @@ public class MainActivity extends AppCompatActivity {
         webView.evaluateJavascript(js, null);
     }
 
-    /** GOOGLE SIGN-IN **/
-    private void setupGoogleSignIn() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id)) // from Firebase console
-                .requestEmail()
+    /** GOOGLE ONE TAP **/
+    private void setupGoogleOneTap() {
+        oneTapClient = Identity.getSignInClient(this);
+
+        signInRequest = BeginSignInRequest.builder()
+                .setGoogleIdTokenRequestOptions(
+                        BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+                                .setSupported(true)
+                                .setServerClientId(getString(R.string.server_client_id)) // from Google Cloud Console
+                                .setFilterByAuthorizedAccounts(false)
+                                .build()
+                )
+                .setAutoSelectEnabled(true)
                 .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
-    private void startGoogleSignIn() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        startActivityForResult(signInIntent, RC_SIGN_IN);
+    private void startGoogleOneTap() {
+        oneTapClient.beginSignIn(signInRequest)
+                .addOnSuccessListener(this, result -> {
+                    try {
+                        startIntentSenderForResult(
+                                result.getPendingIntent().getIntentSender(),
+                                REQ_ONE_TAP, null, 0, 0, 0
+                        );
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                })
+                .addOnFailureListener(this, e -> {
+                    Log.e(TAG, "One Tap failed: " + e.getLocalizedMessage());
+                });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == RC_SIGN_IN) {
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+        if (requestCode == REQ_ONE_TAP && data != null) {
             try {
-                GoogleSignInAccount account = task.getResult(ApiException.class);
-                String idToken = account.getIdToken();
-                sendTokenToWebView(idToken);
+                SignInCredential credential = oneTapClient.getSignInCredentialFromIntent(data);
+                String idToken = credential.getGoogleIdToken();
+                if (idToken != null) {
+                    sendTokenToWebView(idToken);
+                }
             } catch (ApiException e) {
                 e.printStackTrace();
             }
@@ -247,10 +266,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendTokenToWebView(String token) {
-    String js = "if (window.onGoogleSignIn) { window.onGoogleSignIn('" + token + "'); }";
-    webView.evaluateJavascript(js, null);
-}
-
+        String js = "if (window.onGoogleSignIn) { window.onGoogleSignIn('" + token + "'); }";
+        webView.evaluateJavascript(js, null);
+    }
 
     /** THEME CHANGE HANDLER **/
     @Override
