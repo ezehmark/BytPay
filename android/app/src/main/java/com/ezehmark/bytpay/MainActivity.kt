@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "WebViewConsole"
-        private const val SPLASH_DURATION = 5000 // 5 seconds
+        private const val SPLASH_DURATION = 5000
         private const val RC_SIGN_IN = 100
     }
 
@@ -45,21 +45,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         try {
             setContentView(R.layout.activity_main)
 
-            // Initialize views safely
             splashScreen = findViewById(R.id.splash_screen)
             webView = findViewById(R.id.webview)
             noWifiImage = findViewById(R.id.no_wifi_image)
 
             applySystemThemeUI()
             setupGoogleSignIn()
-
             setupWebView()
 
-            // JS interface for triggering Google Sign-In
+            // JS interface to trigger Google Sign-In
             webView?.addJavascriptInterface(object {
                 @JavascriptInterface
                 fun triggerGoogleSignIn() {
@@ -67,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }, "AndroidApp")
 
-            // Splash screen delay
+            // Splash delay
             Handler(Looper.getMainLooper()).postDelayed({
                 splashScreen?.animate()?.alpha(0f)?.setDuration(500)
                     ?.withEndAction { splashScreen?.visibility = View.GONE }
@@ -94,7 +91,6 @@ class MainActivity : AppCompatActivity() {
                 userAgentString = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
                         "AppleWebKit/537.36 (KHTML, like Gecko) " +
                         "Chrome/120.0.0.0 Mobile Safari/537.36"
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     forceDark = WebSettings.FORCE_DARK_AUTO
                 }
@@ -111,10 +107,7 @@ class MainActivity : AppCompatActivity() {
             webView?.webChromeClient = object : WebChromeClient() {
                 override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                     consoleMessage?.let {
-                        val msg = it.message()
-                        val line = it.lineNumber()
-                        val source = it.sourceId() ?: "unknown"
-                        Log.d(TAG, "$msg -- From line $line of $source")
+                        Log.d(TAG, "${it.message()} -- line ${it.lineNumber()} of ${it.sourceId() ?: "unknown"}")
                     }
                     return true
                 }
@@ -134,9 +127,7 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         noWifiImage?.visibility = View.GONE
                         webView?.visibility = View.VISIBLE
-                        if (webView?.url == null) {
-                            webView?.loadUrl("https://bytpay.live")
-                        }
+                        if (webView?.url == null) webView?.loadUrl("https://bytpay.live")
                     }
                 }
 
@@ -220,7 +211,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** GOOGLE SIGN-IN / ONE TAP **/
+    /** OLD GOOGLE SIGN-IN **/
     private fun setupGoogleSignIn() {
         try {
             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -235,11 +226,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun startGoogleSignIn() {
         try {
-            mGoogleSignInClient?.signInIntent?.let { intent ->
-                startActivityForResult(intent, RC_SIGN_IN)
+            mGoogleSignInClient?.signInIntent?.let {
+                startActivityForResult(it, RC_SIGN_IN)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "One Tap Sign-In failed", e)
+            Log.e(TAG, "Google Sign-In failed", e)
         }
     }
 
@@ -254,7 +245,6 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "GoogleSignIn failed", e)
                     null
                 }
-
                 account?.idToken?.let { sendTokenToWebView(it) }
             }
         } catch (e: Exception) {
