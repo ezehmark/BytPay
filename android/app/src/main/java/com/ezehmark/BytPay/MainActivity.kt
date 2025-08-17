@@ -18,250 +18,281 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.ImageView
 import androidx.annotation.Nullable
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.gms.identity.api.identity.BeginSignInRequest
-import com.google.android.gms.identity.api.identity.Identity
-import com.google.android.gms.identity.api.identity.SignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "WebViewConsole"
-        private const val SPLASH_DURATION = 5000L
-        private const val REQ_ONE_TAP = 200
+        private const val SPLASH_DURATION = 5000 // 5 seconds
+        private const val RC_SIGN_IN = 100
     }
 
-    private lateinit var webView: WebView
-    private lateinit var splashScreen: View
-    private lateinit var noWifiImage: ImageView
-
-    private lateinit var oneTapClient: SignInClient
+    private var webView: WebView? = null
+    private var splashScreen: View? = null
+    private var noWifiImage: ImageView? = null
+    private var mGoogleSignInClient: GoogleSignInClient? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        splashScreen = findViewById(R.id.splash_screen)
-        webView = findViewById(R.id.webview)
-        noWifiImage = findViewById(R.id.no_wifi_image)
+        try {
+            setContentView(R.layout.activity_main)
 
-        applySystemThemeUI()
-        setupOneTapClient()
-        setupWebView()
+            // Initialize views safely
+            splashScreen = findViewById(R.id.splash_screen)
+            webView = findViewById(R.id.webview)
+            noWifiImage = findViewById(R.id.no_wifi_image)
 
-        // Splash delay & internet check
-        Handler(Looper.getMainLooper()).postDelayed({
-            splashScreen.animate()
-                .alpha(0f)
-                .setDuration(500)
-                .withEndAction { splashScreen.visibility = View.GONE }
+            applySystemThemeUI()
+            setupGoogleSignIn()
 
-            if (isConnected()) {
-                webView.visibility = View.VISIBLE
-                webView.loadUrl("https://bytpay.live")
-            } else {
-                webView.visibility = View.GONE
-                noWifiImage.visibility = View.VISIBLE
-            }
-        }, SPLASH_DURATION)
+            setupWebView()
+
+            // JS interface for triggering Google Sign-In
+            webView?.addJavascriptInterface(object {
+                @JavascriptInterface
+                fun triggerGoogleSignIn() {
+                    runOnUiThread { startGoogleSignIn() }
+                }
+            }, "AndroidApp")
+
+            // Splash screen delay
+            Handler(Looper.getMainLooper()).postDelayed({
+                splashScreen?.animate()?.alpha(0f)?.setDuration(500)
+                    ?.withEndAction { splashScreen?.visibility = View.GONE }
+
+                if (isConnected()) {
+                    webView?.visibility = View.VISIBLE
+                    webView?.loadUrl("https://bytpay.live")
+                } else {
+                    webView?.visibility = View.GONE
+                    noWifiImage?.visibility = View.VISIBLE
+                }
+            }, SPLASH_DURATION.toLong())
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Crash in onCreate", e)
+        }
     }
 
-    /** NETWORK LISTENER **/
+    private fun setupWebView() {
+        try {
+            webView?.settings?.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                userAgentString = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
+                        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                        "Chrome/120.0.0.0 Mobile Safari/537.36"
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    forceDark = WebSettings.FORCE_DARK_AUTO
+                }
+            }
+
+            WebView.setWebContentsDebuggingEnabled(true)
+
+            webView?.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    setThemeForWebView()
+                }
+            }
+
+            webView?.webChromeClient = object : WebChromeClient() {
+                override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                    consoleMessage?.let {
+                        val msg = it.message()
+                        val line = it.lineNumber()
+                        val source = it.sourceId() ?: "unknown"
+                        Log.d(TAG, "$msg -- From line $line of $source")
+                    }
+                    return true
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "WebView setup failed", e)
+        }
+    }
+
     override fun onStart() {
         super.onStart()
-        val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        try {
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            networkCallback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    runOnUiThread {
+                        noWifiImage?.visibility = View.GONE
+                        webView?.visibility = View.VISIBLE
+                        if (webView?.url == null) {
+                            webView?.loadUrl("https://bytpay.live")
+                        }
+                    }
+                }
 
-        networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                runOnUiThread {
-                    noWifiImage.visibility = View.GONE
-                    webView.visibility = View.VISIBLE
-                    if (webView.url == null) {
-                        webView.loadUrl("https://bytpay.live")
+                override fun onLost(network: Network) {
+                    runOnUiThread {
+                        webView?.visibility = View.GONE
+                        noWifiImage?.visibility = View.VISIBLE
                     }
                 }
             }
-
-            override fun onLost(network: Network) {
-                runOnUiThread {
-                    webView.visibility = View.GONE
-                    noWifiImage.visibility = View.VISIBLE
-                }
-            }
+            cm.registerDefaultNetworkCallback(networkCallback!!)
+        } catch (e: Exception) {
+            Log.e(TAG, "Network callback failed", e)
         }
-        cm.registerDefaultNetworkCallback(networkCallback!!)
     }
 
     override fun onStop() {
         super.onStop()
-        networkCallback?.let {
-            val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-            cm.unregisterNetworkCallback(it)
+        try {
+            networkCallback?.let {
+                val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+                cm.unregisterNetworkCallback(it)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Unregister network callback failed", e)
         }
     }
 
-    /** THEME **/
     private fun applySystemThemeUI() {
-        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        val window: Window = window
-        val barColor = if (isDark) Color.parseColor("#6B7280") else Color.parseColor("#E5E7EB")
-        window.statusBarColor = barColor
-        window.navigationBarColor = barColor
+        try {
+            val isDark =
+                (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            val window: Window = window
+            val barColor = if (isDark) Color.parseColor("#6B7280") else Color.parseColor("#E5E7EB")
+            window.statusBarColor = barColor
+            window.navigationBarColor = barColor
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val appearance = if (isDark) 0 else
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            window.insetsController?.setSystemBarsAppearance(
-                appearance,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            )
-        } else {
-            val decor = window.decorView
-            var flags = decor.systemUiVisibility
-            if (!isDark) {
-                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val appearance = if (isDark) 0 else
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                window.insetsController?.setSystemBarsAppearance(
+                    appearance,
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                )
             } else {
-                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    flags = flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+                val decor = window.decorView
+                var flags = decor.systemUiVisibility
+                flags = if (!isDark) {
+                    flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0
+                } else {
+                    flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv() and
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv() else flags
                 }
+                decor.systemUiVisibility = flags
             }
-            decor.systemUiVisibility = flags
+        } catch (e: Exception) {
+            Log.e(TAG, "Theme setup failed", e)
         }
     }
 
     private fun setThemeForWebView() {
-        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        val theme = if (isDark) "dark" else "light"
+        try {
+            val isDark =
+                (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            val theme = if (isDark) "dark" else "light"
 
-        val js = """
-            document.documentElement.setAttribute('data-theme', '$theme');
-            if (window.themeChange) { window.themeChange('$theme'); }
-            try {
-              const mql = window.matchMedia('(prefers-color-scheme: dark)');
-              Object.defineProperty(mql, 'matches', { value: ${isDark}, configurable: true });
-              window.dispatchEvent(new Event('change'));
-            } catch(e) { console.log('Theme event injection failed', e); }
-        """.trimIndent()
+            val js = """
+                document.documentElement.setAttribute('data-theme', '$theme');
+                if (window.themeChange) { window.themeChange('$theme'); }
+                try {
+                  const mql = window.matchMedia('(prefers-color-scheme: dark)');
+                  Object.defineProperty(mql, 'matches', { value: ${isDark}, configurable: true });
+                  window.dispatchEvent(new Event('change'));
+                } catch(e) { console.log('Theme event injection failed', e); }
+            """.trimIndent()
 
-        webView.evaluateJavascript(js, null)
+            webView?.evaluateJavascript(js, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "WebView theme injection failed", e)
+        }
     }
 
-    /** WEBVIEW SETUP **/
-    private fun setupWebView() {
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            userAgentString = "Mozilla/5.0 (Linux; Android 13; Pixel 7) " +
-                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                    "Chrome/120.0.0.0 Mobile Safari/537.36"
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                forceDark = WebSettings.FORCE_DARK_AUTO
-            }
+    /** GOOGLE SIGN-IN / ONE TAP **/
+    private fun setupGoogleSignIn() {
+        try {
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build()
+            mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
+        } catch (e: Exception) {
+            Log.e(TAG, "GoogleSignInClient init failed", e)
         }
-
-        WebView.setWebContentsDebuggingEnabled(true)
-
-        webView.webViewClient = object : android.webkit.WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                setThemeForWebView()
-            }
-        }
-
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-                consoleMessage?.let {
-                    val msg = it.message()
-                    val line = it.lineNumber()
-                    val source = it.sourceId() ?: "unknown"
-                    Log.d(TAG, "$msg -- From line $line of $source")
-                }
-                return true
-            }
-        }
-
-        webView.addJavascriptInterface(object {
-            @JavascriptInterface
-            fun triggerGoogleSignIn() {
-                runOnUiThread { startGoogleSignIn() }
-            }
-        }, "AndroidApp")
-    }
-
-    /** GOOGLE ONE TAP SIGN-IN **/
-    private fun setupOneTapClient() {
-        oneTapClient = Identity.getSignInClient(this)
     }
 
     private fun startGoogleSignIn() {
-        val signInRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    .setServerClientId(getString(R.string.default_web_client_id))
-                    .setFilterByAuthorizedAccounts(false)
-                    .build()
-            )
-            .build()
-
-        oneTapClient.beginSignIn(signInRequest)
-            .addOnSuccessListener { result ->
-                startIntentSenderForResult(
-                    result.pendingIntent.intentSender,
-                    REQ_ONE_TAP,
-                    null, 0, 0, 0, null
-                )
+        try {
+            mGoogleSignInClient?.signInIntent?.let { intent ->
+                startActivityForResult(intent, RC_SIGN_IN)
             }
-            .addOnFailureListener { e ->
-                Log.d("OneTap", "Sign-in failed: ${e.localizedMessage}")
-            }
+        } catch (e: Exception) {
+            Log.e(TAG, "One Tap Sign-In failed", e)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, @Nullable data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        try {
+            if (requestCode == RC_SIGN_IN) {
+                val task: Task<GoogleSignInAccount> = GoogleSignIn.getSignedInAccountFromIntent(data)
+                val account = try {
+                    task.getResult(ApiException::class.java)
+                } catch (e: ApiException) {
+                    Log.e(TAG, "GoogleSignIn failed", e)
+                    null
+                }
 
-        if (requestCode == REQ_ONE_TAP) {
-            try {
-                val credential = oneTapClient.getSignInCredentialFromIntent(data)
-                val idToken = credential.googleIdToken
-                if (idToken != null) sendTokenToWebView(idToken)
-            } catch (e: Exception) {
-                Log.d("OneTap", "Sign-in error: ${e.localizedMessage}")
+                account?.idToken?.let { sendTokenToWebView(it) }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "onActivityResult failed", e)
         }
     }
 
     private fun sendTokenToWebView(token: String) {
-        val js = "if (window.onGoogleSignIn) { window.onGoogleSignIn('$token'); }"
-        webView.evaluateJavascript(js, null)
-    }
-
-    /** BACK BUTTON **/
-    override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
+        try {
+            val js = "if (window.onGoogleSignIn) { window.onGoogleSignIn('$token'); }"
+            webView?.evaluateJavascript(js, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Sending token to WebView failed", e)
         }
     }
 
-    /** CONFIG CHANGED **/
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applySystemThemeUI()
         setThemeForWebView()
     }
 
-    /** INTERNET CHECK **/
+    override fun onBackPressed() {
+        webView?.let {
+            if (it.canGoBack()) {
+                it.goBack()
+                return
+            }
+        }
+        super.onBackPressed()
+    }
+
     private fun isConnected(): Boolean {
-        val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        return cm.activeNetwork != null
+        return try {
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            cm.activeNetwork != null
+        } catch (e: Exception) {
+            false
+        }
     }
 }
